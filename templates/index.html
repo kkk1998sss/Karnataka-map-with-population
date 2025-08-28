@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karnataka Village Population Visualization</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(225, 229, 233, 0.5);
+            padding: 0.5rem 1rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-badge {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 2px 12px rgba(26, 115, 232, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-subtitle {
+            color: #5f6368;
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .toggle-sidebar-btn {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            color: #5f6368;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .toggle-sidebar-btn:hover {
+            background: #f8f9fa;
+            border-color: #1a73e8;
+            color: #1a73e8;
+        }
+        
+        .toggle-sidebar-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            padding-top: 60px;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .map-container.full-width {
+            margin-right: 0;
+            width: 100vw;
+            right: 0;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            /* Enhanced performance optimizations */
+            will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            perspective: 1000px;
+            -webkit-transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+        }
+        
+        .sidebar {
+            width: 400px;
+            background: white;
+            border-left: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+            z-index: 999;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .sidebar.hidden {
+            transform: translateX(100%);
+            position: absolute;
+            right: -400px;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem 1.5rem 1rem 1.5rem;
+            border-bottom: 1px solid #e1e5e9;
+            background: #fafbfc;
+        }
+        
+        .sidebar-header h3 {
+            color: #202124;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-header p {
+            color: #5f6368;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+        
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            padding: 1.25rem 1rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+        }
+        
+        .stat-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+        
+        .controls {
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #202124;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: white;
+            color: #202124;
+        }
+        
+        .form-group select:focus, .form-group input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+        
+        .form-group select:hover, .form-group input:hover {
+            border-color: #b8bcc1;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1a73e8;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Performance indicator styles */
+        .performance-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(26, 115, 232, 0.95);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        
+        .legend {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid #e1e5e9;
+            margin-top: 1rem;
+        }
+        
+        .legend h4 {
+            color: #202124;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            margin-right: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            background: white;
+            margin-top: 1rem;
+        }
+        
+        .village-item {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .village-item:hover {
+            background-color: #f8f9fa;
+            border-left: 3px solid #1a73e8;
+        }
+        
+        .village-item:last-child {
+            border-bottom: none;
+        }
+        
+        .village-name {
+            font-weight: 600;
+            color: #202124;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .village-details {
+            font-size: 0.8rem;
+            color: #5f6368;
+            line-height: 1.4;
+        }
+        
+        .population-highlight {
+            color: #1a73e8;
+            font-weight: 600;
+        }
+        
+        /* Popup button hover effects */
+        .popup-button {
+            transition: all 0.2s ease;
+        }
+        
+        .popup-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Village details sidebar styles */
+        .village-details-header {
+            border-bottom: 1px solid #e1e5e9;
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .back-button {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            color: #5f6368;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .back-button:hover {
+            background: #e9ecef;
+            border-color: #1a73e8;
+            color: #1a73e8;
+        }
+        
+        .village-details-body {
+            padding: 0;
+        }
+        
+        .village-detail-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 3px solid #1a73e8;
+        }
+        
+        .village-detail-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .village-detail-value {
+            font-size: 1rem;
+            color: #202124;
+            font-weight: 600;
+        }
+        
+        .village-detail-population {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .village-detail-population .value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .village-detail-population .label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* Google Maps style search box - at top with left space */
+        .search-box {
+            position: absolute;
+            top: 0;
+            left: 80px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem;
+            border: 1px solid rgba(225, 229, 233, 0.5);
+            min-width: 280px;
+            max-width: 320px;
+            transition: all 0.2s ease;
+        }
+        
+        .search-box:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Ensure popups appear above search box */
+        .leaflet-popup {
+            z-index: 1001 !important;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            z-index: 1001 !important;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-box input {
+            border: none;
+            outline: none;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            flex: 1;
+            background: transparent;
+        }
+        
+        .search-box input::placeholder {
+            color: #9aa0a6;
+        }
+        
+        .search-box input:focus {
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        #clear-search:hover {
+            background: #f1f3f4;
+            color: #5f6368;
+        }
+        
+        /* Performance optimizations */
+        .map-optimization {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .optimization-btn {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: #5f6368;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .optimization-btn:hover {
+            background: #f8f9fa;
+            border-color: #1a73e8;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+            
+            .header-badge {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.8rem;
+            }
+            
+            .header-subtitle {
+                font-size: 0.75rem;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+            
+            .search-box {
+                min-width: 250px;
+                max-width: 280px;
+                left: 60px;
+                top: 0;
+            }
+            
+            .container {
+                padding-top: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-badge">
+                    🗺️ Karnataka Village Population Visualization
+                </div>
+                <div class="header-subtitle">
+                    Interactive map with population-based coloring
+                </div>
+            </div>
+            <div class="header-controls">
+                <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" onclick="toggleSidebar()">
+                    📊 Show Sidebar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="map-container" id="map-container">
+            <div id="map"></div>
+            
+            <!-- Google Maps style search box -->
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 Search villages, districts, census IDs..." onkeypress="handleSearchKeyPress(event)">
+                <button id="clear-search" onclick="clearSearch()" style="display: none; background: none; border: none; color: #9aa0a6; cursor: pointer; padding: 0.25rem; margin-left: 0.5rem; border-radius: 50%; transition: all 0.2s ease;">
+                    ✕
+                </button>
+            </div>
+            
+            <!-- Performance optimization button -->
+            <div class="map-optimization">
+                <button class="optimization-btn" onclick="togglePerformanceMode()">
+                    🚀 Performance Mode
+                </button>
+            </div>
+            
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <h3>Loading Karnataka Data...</h3>
+                <p>Processing large shapefile for optimal performance</p>
+            </div>
+            
+            <!-- Performance indicator -->
+            <div id="performance-indicator" class="performance-indicator" style="display: none;">
+                <span>🔄 Optimizing...</span>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>📊 Statistics & Controls</h3>
+                <p>Explore village data with interactive filters and real-time statistics</p>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- Main content area -->
+                <div id="main-sidebar-content">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="value" id="village-count">-</div>
+                            <div class="label">Total Villages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value" id="total-population">-</div>
+                            <div class="label">Total Population</div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <div class="form-group">
+                            <label for="district-select">Filter by District</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="district-select" style="flex: 1;">
+                                    <option value="">All Districts</option>
+                                </select>
+                                <button onclick="refreshDistrictFilter()" style="background: #f8f9fa; border: 1px solid #e1e5e9; border-radius: 6px; padding: 0.5rem; cursor: pointer; font-size: 0.8rem; color: #5f6368; transition: all 0.2s ease;">
+                                    🔄
+                                </button>
+                            </div>
+                        </div>
+                        
+
+                    </div>
+                    
+                    <div id="search-results" class="search-results" style="display: none;"></div>
+                    
+                    <div class="legend">
+                        <h4>Population Legend</h4>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #fee5d9;"></div>
+                            <span>Low Population</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #fcae91;"></div>
+                            <span>Medium Population</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #fb6a4a;"></div>
+                            <span>High Population</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #de2d26;"></div>
+                            <span>Very High Population</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Village details area (hidden by default) -->
+                <div id="village-details-content" style="display: none;">
+                    <div class="village-details-header">
+                        <button onclick="showMainSidebar()" class="back-button">
+                            ← Back to Statistics
+                        </button>
+                        <h3 id="village-details-title">Village Details</h3>
+                    </div>
+                    
+                    <div class="village-details-body">
+                        <div id="village-details-info">
+                            <!-- Village details will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        let map;
+        let villageLayer;
+        let populationStats;
+        let allVillages = [];
+        let performanceMode = false;
+        let zoomLevel = 7;
+        let renderTimeout;
+        
+        // Initialize map with enhanced performance optimizations
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: true,
+                preferCanvas: true,
+                renderer: L.canvas({ padding: 0.5 }),
+                maxZoom: 18,
+                minZoom: 5,
+                zoomSnap: 0.5,
+                zoomDelta: 0.5
+            }).setView([15.1589, 76.0030], 7);
+            
+            // Add OpenStreetMap tiles with enhanced performance
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18,
+                updateWhenZooming: false,
+                updateWhenIdle: true,
+                keepBuffer: 4,
+                maxNativeZoom: 18
+            }).addTo(map);
+            
+            // Initialize village layer with enhanced performance
+            villageLayer = L.geoJSON(null, {
+                style: function(feature) {
+                    if (feature.properties.type === 'state_boundary') {
+                        return {
+                            fillColor: 'transparent',
+                            weight: 2,
+                            opacity: 0.6,
+                            color: '#1a73e8',
+                            fillOpacity: 0.02
+                        };
+                    } else {
+                        return getPopulationStyle(feature.properties.tot_p);
+                    }
+                },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties.type === 'state_boundary') {
+                        layer.bindPopup(`
+                            <div style="min-width: 200px;">
+                                <h4 style="margin: 0 0 10px 0; color: #202124;">🗺️ ${feature.properties.name}</h4>
+                                <p>${feature.properties.description}</p>
+                            </div>
+                        `);
+                    } else {
+                        if (feature.properties.village_na || feature.properties.tot_p) {
+                            layer.bindPopup(createPopupContent(feature.properties));
+                            layer.on('click', function() {
+                                highlightVillage(feature.properties);
+                            });
+                        }
+                    }
+                },
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: performanceMode ? 3 : 4,
+                        fillColor: getPopulationStyle(feature.properties.tot_p).fillColor,
+                        color: '#1a73e8',
+                        weight: 1,
+                        opacity: 0.7,
+                        fillOpacity: 0.6
+                    });
+                }
+            }).addTo(map);
+            
+            // Enhanced performance event handlers
+            map.on('zoomstart', function() {
+                clearTimeout(renderTimeout);
+                villageLayer.setStyle({ opacity: 0.3, fillOpacity: 0.2 });
+                
+                if (document.getElementById('performance-indicator')) {
+                    document.getElementById('performance-indicator').style.display = 'block';
+                }
+                
+                // Reduce rendering complexity during zoom
+                if (performanceMode) {
+                    villageLayer.setStyle({ smoothFactor: 0.1 });
+                }
+            });
+            
+            map.on('zoomend', function() {
+                const newZoom = map.getZoom();
+                zoomLevel = newZoom;
+                
+                // Debounced rendering optimization
+                clearTimeout(renderTimeout);
+                renderTimeout = setTimeout(() => {
+                    villageLayer.setStyle({ opacity: 0.9, fillOpacity: 0.6 });
+                    
+                    if (performanceMode) {
+                        villageLayer.setStyle({ smoothFactor: 0.5 });
+                    }
+                    
+                    if (document.getElementById('performance-indicator')) {
+                        document.getElementById('performance-indicator').style.display = 'none';
+                    }
+                }, 150);
+            });
+            
+            // Optimized view events
+            map.on('viewreset', function() {
+                if (performanceMode) {
+                    setTimeout(() => villageLayer.redraw(), 50);
+                }
+            });
+            
+            map.on('moveend', function() {
+                if (performanceMode) {
+                    clearTimeout(map._redrawTimeout);
+                    map._redrawTimeout = setTimeout(() => {
+                        villageLayer.redraw();
+                    }, 200);
+                }
+            });
+        }
+        
+        // Toggle sidebar visibility
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mapContainer = document.getElementById('map-container');
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+            
+            if (sidebar.classList.contains('hidden')) {
+                // Show sidebar
+                sidebar.classList.remove('hidden');
+                mapContainer.classList.remove('full-width');
+                toggleBtn.innerHTML = '📊 Hide Sidebar';
+                toggleBtn.classList.add('active');
+            } else {
+                // Hide sidebar
+                sidebar.classList.add('hidden');
+                mapContainer.classList.add('full-width');
+                toggleBtn.innerHTML = '📊 Show Sidebar';
+                toggleBtn.classList.remove('active');
+            }
+        }
+        
+        // Toggle performance mode
+        function togglePerformanceMode() {
+            performanceMode = !performanceMode;
+            const btn = document.querySelector('.optimization-btn');
+            
+            if (performanceMode) {
+                btn.innerHTML = '🚀 Performance Mode ON';
+                btn.style.background = '#1a73e8';
+                btn.style.color = 'white';
+                
+                // Apply performance optimizations
+                villageLayer.setStyle({ smoothFactor: 0.1 });
+                map.setMaxZoom(16);
+                
+                console.log('🚀 Performance mode enabled');
+            } else {
+                btn.innerHTML = '🚀 Performance Mode';
+                btn.style.background = 'white';
+                btn.style.color = '#5f6368';
+                
+                // Restore normal settings
+                villageLayer.setStyle({ smoothFactor: 0.5 });
+                map.setMaxZoom(18);
+                
+                console.log('📊 Normal mode enabled');
+            }
+        }
+        
+        // Enhanced population styling with performance optimization
+        function getPopulationStyle(population) {
+            const pop = parseFloat(population) || 0;
+            let color, weight, opacity, fillOpacity;
+            
+            if (pop < populationStats.q1) {
+                color = '#fee5d9';
+                weight = performanceMode ? 0.5 : 1;
+                opacity = 0.5;
+                fillOpacity = 0.3;
+            } else if (pop < populationStats.q2) {
+                color = '#fcae91';
+                weight = performanceMode ? 0.75 : 1.5;
+                opacity = 0.6;
+                fillOpacity = 0.4;
+            } else if (pop < populationStats.q3) {
+                color = '#fb6a4a';
+                weight = performanceMode ? 1 : 2;
+                opacity = 0.7;
+                fillOpacity = 0.5;
+            } else {
+                color = '#de2d26';
+                weight = performanceMode ? 1.25 : 2.5;
+                opacity = 0.8;
+                fillOpacity = 0.6;
+            }
+            
+            return {
+                fillColor: color,
+                weight: weight,
+                opacity: opacity,
+                color: '#1a73e8',
+                fillOpacity: fillOpacity,
+                smoothFactor: performanceMode ? 0.1 : 0.5,
+                interactive: true
+            };
+        }
+        
+        // Enhanced popup content with comprehensive details
+        function createPopupContent(properties) {
+            const population = properties.tot_p || 0;
+            const populationClass = population < 1000 ? 'low' : population < 5000 ? 'medium' : population < 10000 ? 'high' : 'very-high';
+            
+            return `
+                <div style="min-width: 280px; max-width: 320px; font-family: 'Inter', sans-serif; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.15);">
+                    <!-- Header with village name -->
+                    <div style="background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color: white; padding: 10px; text-align: center;">
+                        <h4 style="margin: 0; font-size: 1rem; font-weight: 600; text-transform: capitalize;">
+                            🏘️ ${properties.village_na || 'Unknown'}
+                        </h4>
+                    </div>
+                    
+                    <!-- Comprehensive content -->
+                    <div style="padding: 12px;">
+                        <!-- Population highlight -->
+                        <div style="text-align: center; margin-bottom: 12px; background: #f8f9fa; padding: 8px; border-radius: 6px;">
+                            <div style="font-size: 1.3rem; font-weight: 700; color: #1a73e8;">
+                                ${population.toLocaleString()}
+                            </div>
+                            <div style="font-size: 0.8rem; color: #6c757d; text-transform: capitalize;">
+                                Total Population
+                            </div>
+                        </div>
+                        
+                        <!-- Detailed info grid -->
+                        <div style="display: grid; gap: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
+                                <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">📍 District:</span>
+                                <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">${properties.district_n || 'Unknown'}</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
+                                <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🏛️ Subdistrict:</span>
+                                <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">${properties.subdistric || 'Unknown'}</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
+                                <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🏛️ State:</span>
+                                <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">Karnataka</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
+                                <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🆔 Census ID:</span>
+                                <span style="font-size: 0.8rem; color: #1565c0; font-weight: 600; font-family: 'Courier New', monospace;">${properties.pc11_tv_id || 'N/A'}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div style="text-align: center;">
+                            <button onclick="flyToVillageFromPopup('${properties.village_na}')" 
+                                    style="background: #34a853; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; width: 100%; text-transform: capitalize; margin-bottom: 6px;">
+                                🗺️ Center Map
+                            </button>
+                            <button onclick="showVillageDetailsAndSidebar('${properties.village_na}')" 
+                                    style="background: #1a73e8; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; width: 100%; text-transform: capitalize;">
+                                🔍 More Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Handle search key press (Enter key)
+        function handleSearchKeyPress(event) {
+            if (event.key === 'Enter') {
+                const searchTerm = document.getElementById('search-input').value.trim();
+                if (searchTerm) {
+                    // Try to find exact village match
+                    const exactMatch = allVillages.find(village => 
+                        village.village_name.toLowerCase() === searchTerm.toLowerCase()
+                    );
+                    
+                    if (exactMatch) {
+                        selectVillageFromSearch(exactMatch.village_name);
+                    } else {
+                        searchVillages(); // Show search results
+                    }
+                }
+            }
+        }
+        
+        // Clear search functionality
+        function clearSearch() {
+            const searchInput = document.getElementById('search-input');
+            const clearBtn = document.getElementById('clear-search');
+            const searchResults = document.getElementById('search-results');
+            
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            searchResults.style.display = 'none';
+            
+            // Reset district filter
+            const districtSelect = document.getElementById('district-select');
+            if (districtSelect) {
+                districtSelect.value = '';
+            }
+            
+            // Clear search results
+            searchVillages();
+        }
+        
+        // Show/hide clear button based on input
+        function toggleClearButton() {
+            const searchInput = document.getElementById('search-input');
+            const clearBtn = document.getElementById('clear-search');
+            
+            if (searchInput.value.trim()) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        }
+        
+        // Show village details in sidebar and auto-show sidebar
+        function showVillageDetailsAndSidebar(villageName) {
+            // First, make sure sidebar is visible
+            const sidebar = document.querySelector('.sidebar');
+            const mapContainer = document.getElementById('map-container');
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+            
+            if (sidebar.classList.contains('hidden')) {
+                // Show sidebar
+                sidebar.classList.remove('hidden');
+                mapContainer.classList.remove('full-width');
+                toggleBtn.innerHTML = '📊 Hide Sidebar';
+                toggleBtn.classList.add('active');
+            }
+            
+            // Get village data directly from the map layer
+            let village = null;
+            
+            if (villageLayer) {
+                villageLayer.eachLayer(layer => {
+                    if (layer.feature && layer.feature.properties && 
+                        layer.feature.properties.village_na === villageName) {
+                        const props = layer.feature.properties;
+                        village = {
+                            village_name: props.village_na || 'Unknown',
+                            district: props.district_n || 'Unknown',
+                            subdistrict: props.subdistric || 'Unknown',
+                            population: props.tot_p || 0,
+                            census_id: props.pc11_tv_id || 'N/A'
+                        };
+                    }
+                });
+            }
+            
+            if (!village) return;
+            
+            // Hide main sidebar content and show village details
+            document.getElementById('main-sidebar-content').style.display = 'none';
+            document.getElementById('village-details-content').style.display = 'block';
+            
+            // Update village details title
+            document.getElementById('village-details-title').textContent = village.village_name;
+            
+            // Populate village details
+            const detailsContainer = document.getElementById('village-details-info');
+            detailsContainer.innerHTML = `
+                <div class="village-detail-population">
+                    <div class="value">${village.population.toLocaleString()}</div>
+                    <div class="label">Total Population</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Village Name</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.village_name}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">District</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.district}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Subdistrict</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.subdistrict || 'Unknown'}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">State</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">Karnataka</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Census ID</div>
+                    <div class="village-detail-value" style="font-family: 'Courier New', monospace; color: #1565c0;">${village.census_id}</div>
+                </div>
+            `;
+        }
+        
+        // Show village details in sidebar (original function kept for compatibility)
+        function showVillageDetails(villageName) {
+            // Find the village data
+            const village = allVillages.find(v => v.village_name === villageName);
+            if (!village) return;
+            
+            // Hide main sidebar content and show village details
+            document.getElementById('main-sidebar-content').style.display = 'none';
+            document.getElementById('village-details-content').style.display = 'block';
+            
+            // Update village details title
+            document.getElementById('village-details-title').textContent = village.village_name;
+            
+            // Populate village details
+            const detailsContainer = document.getElementById('village-details-info');
+            detailsContainer.innerHTML = `
+                <div class="village-detail-population">
+                    <div class="value">${village.population.toLocaleString()}</div>
+                    <div class="label">Total Population</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Village Name</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.village_name}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">District</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.district}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Subdistrict</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">${village.subdistrict || 'Unknown'}</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">State</div>
+                    <div class="village-detail-value" style="text-transform: capitalize;">Karnataka</div>
+                </div>
+                
+                <div class="village-detail-item">
+                    <div class="village-detail-label">Census ID</div>
+                    <div class="village-detail-value" style="font-family: 'Courier New', monospace; color: #1565c0;">${village.census_id}</div>
+                </div>
+            `;
+        }
+        
+        // Show main sidebar content
+        function showMainSidebar() {
+            document.getElementById('village-details-content').style.display = 'none';
+            document.getElementById('main-sidebar-content').style.display = 'block';
+        }
+        
+        // Initialize sidebar state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start with sidebar hidden for full map view
+            const sidebar = document.querySelector('.sidebar');
+            const mapContainer = document.getElementById('map-container');
+            const toggleBtn = document.getElementById('toggle-sidebar-btn');
+            
+            if (sidebar && mapContainer && toggleBtn) {
+                sidebar.classList.add('hidden');
+                mapContainer.classList.add('full-width');
+                toggleBtn.innerHTML = '📊 Show Sidebar';
+                toggleBtn.classList.remove('active');
+            }
+        });
+        
+        // Manual refresh function for district filter
+        function refreshDistrictFilter() {
+            loadDistricts();
+            loadVillages();
+        }
+        
+        // Enhanced search functionality with better filtering
+        function searchVillages() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            const districtFilter = document.getElementById('district-select').value;
+            const searchResults = document.getElementById('search-results');
+            
+            // Clear previous results
+            if (searchResults) {
+                searchResults.style.display = 'none';
+            }
+            
+            // If no search criteria, hide results
+            if (!searchTerm && !districtFilter) {
+                return;
+            }
+            
+            // Filter villages based on search criteria
+            const filteredVillages = allVillages.filter(village => {
+                let matchesSearch = true;
+                let matchesDistrict = true;
+                
+                // Text search (village name, district, subdistrict, census ID)
+                if (searchTerm) {
+                    matchesSearch = 
+                        village.village_name.toLowerCase().includes(searchTerm) ||
+                        village.district.toLowerCase().includes(searchTerm) ||
+                        (village.subdistrict && village.subdistrict.toLowerCase().includes(searchTerm)) ||
+                        village.census_id.toLowerCase().includes(searchTerm);
+                }
+                
+                // District filter
+                if (districtFilter) {
+                    matchesDistrict = village.district === districtFilter;
+                }
+                
+                return matchesSearch && matchesDistrict;
+            });
+            
+            // Display results
+            displaySearchResults(filteredVillages);
+            
+            // Auto-fly to exact match if found
+            if (searchTerm && filteredVillages.length === 1) {
+                const exactMatch = filteredVillages.find(v => 
+                    v.village_name.toLowerCase() === searchTerm.toLowerCase()
+                );
+                if (exactMatch) {
+                    setTimeout(() => flyToVillageByName(exactMatch.village_name), 500);
+                }
+            }
+            
+            console.log(`🔍 Search results: ${filteredVillages.length} villages found`);
+        }
+        
+        // Enhanced search results display with better information
+        function displaySearchResults(villages) {
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (villages.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div style="padding: 1.5rem; text-align: center; color: #5f6368;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                        <div style="font-weight: 500; margin-bottom: 0.25rem;">No villages found</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Try different search terms or district filters</div>
+                    </div>
+                `;
+            } else {
+                const maxResults = 25; // Show more results
+                const displayVillages = villages.slice(0, maxResults);
+                const hasMore = villages.length > maxResults;
+                
+                resultsContainer.innerHTML = `
+                    <div style="padding: 0.75rem; background: #f8f9fa; border-bottom: 1px solid #e1e5e9; font-size: 0.8rem; color: #5f6368;">
+                        Found ${villages.length} villages${hasMore ? ` (showing first ${maxResults})` : ''}
+                    </div>
+                    ${displayVillages.map(village => `
+                        <div class="village-item" onclick="selectVillageFromSearch('${village.village_name}')">
+                            <div class="village-name">${village.village_name}</div>
+                            <div class="village-details">
+                                <span style="color: #1a73e8; font-weight: 500;">📍 ${village.district}</span>
+                                ${village.subdistrict ? ` • 🏛️ ${village.subdistrict}` : ''}
+                                • 👥 <span class="population-highlight">${village.population.toLocaleString()}</span>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #9aa0a6; margin-top: 0.25rem;">
+                                🆔 ${village.census_id}
+                            </div>
+                        </div>
+                    `).join('')}
+                    ${hasMore ? `
+                        <div style="padding: 1rem; text-align: center; color: #5f6368; font-size: 0.8rem; border-top: 1px solid #e1e5e9;">
+                            ... and ${villages.length - maxResults} more villages
+                        </div>
+                    ` : ''}
+                `;
+            }
+            
+            resultsContainer.style.display = 'block';
+        }
+        
+        // Enhanced village highlighting
+        function highlightVillage(properties) {
+            const searchInput = document.getElementById('search-input');
+            searchInput.value = properties.village_na || '';
+            searchVillages();
+        }
+        
+        // Select village from search results with enhanced functionality
+        function selectVillageFromSearch(villageName) {
+            // Find the village data
+            const village = allVillages.find(v => v.village_name === villageName);
+            if (!village) return;
+            
+            // Fly to the village
+            flyToVillageByName(villageName);
+            
+            // Show village details in sidebar
+            showVillageDetailsAndSidebar(villageName);
+            
+            // Clear search results
+            document.getElementById('search-results').style.display = 'none';
+            
+            // Update search input
+            document.getElementById('search-input').value = villageName;
+            
+            console.log(`✅ Selected village: ${villageName}`);
+        }
+        
+        // Enhanced fly to village
+        function flyToVillage(villageId) {
+            villageLayer.eachLayer(layer => {
+                if (layer.feature && layer.feature.properties.id === villageId) {
+                    map.flyTo(layer.getBounds().getCenter(), 14, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    setTimeout(() => {
+                        layer.openPopup();
+                    }, 1600);
+                }
+            });
+        }
+        
+        // Fly to village by name (for search results)
+        function flyToVillageByName(villageName) {
+            villageLayer.eachLayer(layer => {
+                if (layer.feature && layer.feature.properties.village_na === villageName) {
+                    map.flyTo(layer.getBounds().getCenter(), 14, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    setTimeout(() => {
+                        layer.openPopup();
+                    }, 1600);
+                }
+            });
+        }
+        
+        // Fly to village from popup (by name)
+        function flyToVillageFromPopup(villageName) {
+            villageLayer.eachLayer(layer => {
+                if (layer.feature && layer.feature.properties.village_na === villageName) {
+                    map.flyTo(layer.getBounds().getCenter(), 14, {
+                        duration: 1.5,
+                        easeLinearity: 0.25
+                    });
+                    
+                    // Close popup after centering
+                    setTimeout(() => {
+                        layer.closePopup();
+                    }, 1000);
+                }
+            });
+        }
+        
+        // Enhanced data loading with performance optimization
+        async function loadData() {
+            try {
+                console.log("🔄 Loading data from API...");
+                const response = await fetch('/api/data');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log("📊 API response received:", data);
+                
+                if (!data.topojson) {
+                    throw new Error("No topojson data in response");
+                }
+                
+                let geojsonData;
+                if (typeof data.topojson === 'string') {
+                    geojsonData = JSON.parse(data.topojson);
+                } else {
+                    geojsonData = data.topojson;
+                }
+                
+                if (!geojsonData.features || !Array.isArray(geojsonData.features)) {
+                    throw new Error("Invalid GeoJSON structure: missing or invalid features array");
+                }
+                
+                console.log(`✅ Found ${geojsonData.features.length} features`);
+                
+                // Calculate population statistics
+                const populations = geojsonData.features
+                    .map(f => parseFloat(f.properties?.tot_p) || 0)
+                    .filter(p => p > 0)
+                    .sort((a, b) => a - b);
+                
+                if (populations.length === 0) {
+                    throw new Error("No valid population data found");
+                }
+                
+                const q1 = populations[Math.floor(populations.length * 0.25)];
+                const q2 = populations[Math.floor(populations.length * 0.5)];
+                const q3 = populations[Math.floor(populations.length * 0.75)];
+                
+                populationStats = {
+                    min: data.population_stats?.min || populations[0],
+                    max: data.population_stats?.max || populations[populations.length - 1],
+                    mean: data.population_stats?.mean || (populations.reduce((a, b) => a + b, 0) / populations.length),
+                    q1: q1,
+                    q2: q2,
+                    q3: q3
+                };
+                
+                console.log("📊 Population stats calculated:", populationStats);
+                
+                // Enhanced batch processing with performance optimization
+                console.log("🗺️ Adding data to map...");
+                
+                const batchSize = performanceMode ? 500 : 1000;
+                const totalFeatures = geojsonData.features.length;
+                
+                function addFeaturesBatch(startIndex) {
+                    const endIndex = Math.min(startIndex + batchSize, totalFeatures);
+                    const batch = geojsonData.features.slice(startIndex, endIndex);
+                    
+                    villageLayer.addData(batch);
+                    
+                    if (endIndex < totalFeatures) {
+                        setTimeout(() => addFeaturesBatch(endIndex), performanceMode ? 5 : 10);
+                    } else {
+                        console.log("✅ All features added, fitting bounds...");
+                        map.fitBounds(villageLayer.getBounds(), {
+                            padding: [20, 20],
+                            maxZoom: 12
+                        });
+                    }
+                }
+                
+                addFeaturesBatch(0);
+                
+                // Update statistics
+                const villageCountElement = document.getElementById('village-count');
+                const totalPopulationElement = document.getElementById('total-population');
+                
+                if (villageCountElement) {
+                    villageCountElement.textContent = data.village_count?.toLocaleString() || geojsonData.features.length.toLocaleString();
+                }
+                
+                const totalPop = populations.reduce((a, b) => a + b, 0);
+                if (totalPopulationElement) {
+                    totalPopulationElement.textContent = totalPop.toLocaleString();
+                }
+                
+                // Load additional data AFTER all features are added
+                setTimeout(() => {
+                    loadDistricts();
+                    loadVillages();
+                }, 1000); // Wait for map to fully render
+                
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+                
+                console.log(`✅ Map loaded successfully with ${geojsonData.features.length} villages`);
+                
+            } catch (error) {
+                console.error('❌ Error loading data:', error);
+                document.getElementById('loading').innerHTML = `
+                    <h3 style="color: #d93025;">Error Loading Data</h3>
+                    <p>${error.message}</p>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">Retry</button>
+                `;
+            }
+        }
+        
+        // Load districts from loaded data
+        function loadDistricts() {
+            try {
+                // Extract unique districts from the loaded map data
+                const districts = new Set();
+                
+                // Get districts from village layer if available
+                if (villageLayer) {
+                    villageLayer.eachLayer(layer => {
+                        if (layer.feature && layer.feature.properties && layer.feature.properties.district_n) {
+                            districts.add(layer.feature.properties.district_n);
+                        }
+                    });
+                }
+                
+                // Convert to array and sort
+                const districtArray = Array.from(districts).sort();
+                
+                const districtSelect = document.getElementById('district-select');
+                if (districtSelect) {
+                    // Clear existing options
+                    districtSelect.innerHTML = '<option value="">All Districts</option>';
+                    
+                    // Add district options
+                    districtArray.forEach(district => {
+                        if (district && district.trim() !== '') {
+                            const option = document.createElement('option');
+                            option.value = district;
+                            option.textContent = district;
+                            districtSelect.appendChild(option);
+                        }
+                    });
+                    
+                    // Add event listener
+                    districtSelect.addEventListener('change', searchVillages);
+                }
+                
+            } catch (error) {
+                console.error('Error loading districts:', error);
+            }
+        }
+        
+        // Load villages from map data
+        function loadVillages() {
+            try {
+                const villages = [];
+                
+                // Extract village data from the map layer
+                if (villageLayer) {
+                    villageLayer.eachLayer(layer => {
+                        if (layer.feature && layer.feature.properties && layer.feature.properties.village_na) {
+                            const props = layer.feature.properties;
+                            villages.push({
+                                village_name: props.village_na || 'Unknown',
+                                district: props.district_n || 'Unknown',
+                                subdistrict: props.subdistric || 'Unknown',
+                                population: props.tot_p || 0,
+                                census_id: props.pc11_tv_id || 'N/A',
+                                latlng: layer.getLatLng()
+                            });
+                        }
+                    });
+                }
+                
+                allVillages = villages;
+                
+                // Add search input event listener
+                const searchInput = document.getElementById('search-input');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        searchVillages();
+                        toggleClearButton();
+                    });
+                }
+                
+            } catch (error) {
+                console.error('Error loading villages:', error);
+            }
+        }
+        
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 Initializing Karnataka Village Visualization...");
+            initMap();
+            loadData();
+        });
+    </script>
+</body>
+</html>
