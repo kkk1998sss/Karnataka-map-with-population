@@ -644,52 +644,52 @@
             <div class="sidebar-content">
                 <!-- Main content area -->
                 <div id="main-sidebar-content">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="value" id="village-count">-</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="village-count">-</div>
                             <div class="label">Total Villages</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="value" id="total-population">-</div>
-                            <div class="label">Total Population</div>
-                        </div>
-                    </div>
-                    
-                    <div class="controls">
-                        <div class="form-group">
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="total-population">-</div>
+                    <div class="label">Total Population</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="form-group">
                             <label for="district-select">Filter by District</label>
                             <div style="display: flex; gap: 0.5rem; align-items: center;">
                                 <select id="district-select" style="flex: 1;">
-                                    <option value="">All Districts</option>
-                                </select>
+                        <option value="">All Districts</option>
+                    </select>
                                 <button onclick="refreshDistrictFilter()" style="background: #f8f9fa; border: 1px solid #e1e5e9; border-radius: 6px; padding: 0.5rem; cursor: pointer; font-size: 0.8rem; color: #5f6368; transition: all 0.2s ease;">
                                     🔄
                                 </button>
                             </div>
-                        </div>
-                        
+                </div>
+                
 
-                    </div>
-                    
-                    <div id="search-results" class="search-results" style="display: none;"></div>
-                    
-                    <div class="legend">
-                        <h4>Population Legend</h4>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #fee5d9;"></div>
-                            <span>Low Population</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #fcae91;"></div>
-                            <span>Medium Population</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #fb6a4a;"></div>
-                            <span>High Population</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background: #de2d26;"></div>
-                            <span>Very High Population</span>
+            </div>
+            
+            <div id="search-results" class="search-results" style="display: none;"></div>
+            
+            <div class="legend">
+                <h4>Population Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fee5d9;"></div>
+                    <span>Low Population</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fcae91;"></div>
+                    <span>Medium Population</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fb6a4a;"></div>
+                    <span>High Population</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #de2d26;"></div>
+                    <span>Very High Population</span>
                         </div>
                     </div>
                 </div>
@@ -701,13 +701,13 @@
                             ← Back to Statistics
                         </button>
                         <h3 id="village-details-title">Village Details</h3>
-                    </div>
+                </div>
                     
                     <div class="village-details-body">
                         <div id="village-details-info">
                             <!-- Village details will be populated here -->
-                        </div>
-                    </div>
+                </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -749,35 +749,35 @@
             }).addTo(map);
             
             // Initialize village layer with enhanced performance
-            villageLayer = L.geoJSON(null, {
-                style: function(feature) {
-                    if (feature.properties.type === 'state_boundary') {
-                        return {
-                            fillColor: 'transparent',
+        villageLayer = L.geoJSON(null, {
+            style: function(feature) {
+                if (feature.properties.type === 'state_boundary') {
+                    return {
+                        fillColor: 'transparent',
                             weight: 2,
                             opacity: 0.6,
                             color: '#1a73e8',
                             fillOpacity: 0.02
-                        };
-                    } else {
-                        return getPopulationStyle(feature.properties.tot_p);
-                    }
-                },
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties.type === 'state_boundary') {
-                        layer.bindPopup(`
-                            <div style="min-width: 200px;">
+                    };
+                } else {
+                    return getPopulationStyle(feature.properties.tot_p);
+                }
+            },
+            onEachFeature: function(feature, layer) {
+                if (feature.properties.type === 'state_boundary') {
+                    layer.bindPopup(`
+                        <div style="min-width: 200px;">
                                 <h4 style="margin: 0 0 10px 0; color: #202124;">🗺️ ${feature.properties.name}</h4>
-                                <p>${feature.properties.description}</p>
-                            </div>
-                        `);
-                    } else {
+                            <p>${feature.properties.description}</p>
+                        </div>
+                    `);
+                } else {
                         if (feature.properties.village_na || feature.properties.tot_p) {
-                            layer.bindPopup(createPopupContent(feature.properties));
-                            layer.on('click', function() {
-                                highlightVillage(feature.properties);
-                            });
-                        }
+                    layer.bindPopup(createPopupContent(feature.properties));
+                    layer.on('click', function() {
+                        highlightVillage(feature.properties);
+                    });
+                }
                     }
                 },
                 pointToLayer: function(feature, latlng) {
@@ -789,8 +789,8 @@
                         opacity: 0.7,
                         fillOpacity: 0.6
                     });
-                }
-            }).addTo(map);
+            }
+        }).addTo(map);
             
             // Enhanced performance event handlers
             map.on('zoomstart', function() {
@@ -941,7 +941,7 @@
                     <div style="background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color: white; padding: 10px; text-align: center;">
                         <h4 style="margin: 0; font-size: 1rem; font-weight: 600; text-transform: capitalize;">
                             🏘️ ${properties.village_na || 'Unknown'}
-                        </h4>
+                    </h4>
                     </div>
                     
                     <!-- Comprehensive content -->
@@ -950,28 +950,28 @@
                         <div style="text-align: center; margin-bottom: 12px; background: #f8f9fa; padding: 8px; border-radius: 6px;">
                             <div style="font-size: 1.3rem; font-weight: 700; color: #1a73e8;">
                                 ${population.toLocaleString()}
-                            </div>
+                    </div>
                             <div style="font-size: 0.8rem; color: #6c757d; text-transform: capitalize;">
                                 Total Population
-                            </div>
-                        </div>
+                    </div>
+                    </div>
                         
                         <!-- Detailed info grid -->
                         <div style="display: grid; gap: 8px; margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
                                 <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">📍 District:</span>
                                 <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">${properties.district_n || 'Unknown'}</span>
-                            </div>
+                    </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
                                 <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🏛️ Subdistrict:</span>
                                 <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">${properties.subdistric || 'Unknown'}</span>
-                            </div>
+                    </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
                                 <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🏛️ State:</span>
                                 <span style="font-size: 0.8rem; color: #202124; font-weight: 600; text-transform: capitalize;">Karnataka</span>
-                            </div>
+                    </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f3f4;">
                                 <span style="font-size: 0.75rem; color: #5f6368; font-weight: 500; text-transform: uppercase;">🆔 Census ID:</span>
@@ -1223,7 +1223,7 @@
                 // Text search (village name, district, subdistrict, census ID)
                 if (searchTerm) {
                     matchesSearch = 
-                        village.village_name.toLowerCase().includes(searchTerm) ||
+                    village.village_name.toLowerCase().includes(searchTerm) ||
                         village.district.toLowerCase().includes(searchTerm) ||
                         (village.subdistrict && village.subdistrict.toLowerCase().includes(searchTerm)) ||
                         village.census_id.toLowerCase().includes(searchTerm);
@@ -1276,15 +1276,15 @@
                     </div>
                     ${displayVillages.map(village => `
                         <div class="village-item" onclick="selectVillageFromSearch('${village.village_name}')">
-                            <div class="village-name">${village.village_name}</div>
-                            <div class="village-details">
+                        <div class="village-name">${village.village_name}</div>
+                        <div class="village-details">
                                 <span style="color: #1a73e8; font-weight: 500;">📍 ${village.district}</span>
                                 ${village.subdistrict ? ` • 🏛️ ${village.subdistrict}` : ''}
                                 • 👥 <span class="population-highlight">${village.population.toLocaleString()}</span>
-                            </div>
+                        </div>
                             <div style="font-size: 0.7rem; color: #9aa0a6; margin-top: 0.25rem;">
                                 🆔 ${village.census_id}
-                            </div>
+                    </div>
                         </div>
                     `).join('')}
                     ${hasMore ? `
@@ -1336,7 +1336,7 @@
                     });
                     
                     setTimeout(() => {
-                        layer.openPopup();
+                    layer.openPopup();
                     }, 1600);
                 }
             });
@@ -1470,8 +1470,8 @@
                 
                 // Load additional data AFTER all features are added
                 setTimeout(() => {
-                    loadDistricts();
-                    loadVillages();
+                loadDistricts();
+                loadVillages();
                 }, 1000); // Wait for map to fully render
                 
                 // Hide loading screen
@@ -1515,15 +1515,15 @@
                     // Add district options
                     districtArray.forEach(district => {
                         if (district && district.trim() !== '') {
-                            const option = document.createElement('option');
-                            option.value = district;
-                            option.textContent = district;
-                            districtSelect.appendChild(option);
+                    const option = document.createElement('option');
+                    option.value = district;
+                    option.textContent = district;
+                    districtSelect.appendChild(option);
                         }
-                    });
-                    
+                });
+                
                     // Add event listener
-                    districtSelect.addEventListener('change', searchVillages);
+                districtSelect.addEventListener('change', searchVillages);
                 }
                 
             } catch (error) {
